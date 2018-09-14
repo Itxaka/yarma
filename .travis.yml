@@ -1,6 +1,7 @@
-sudo: false
+sudo: required
 cache: pip
 language: python
+services: rabbitmq
 before_install: pip install coveralls
 python:
   - "2.7"

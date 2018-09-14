@@ -14,7 +14,13 @@ setup(
             "yarma = yarma.yarma:main",
         ],
     },
-    install_requires=[],
+    # not invented here syndrome in its full glory
+    # why use standard libs when you can just create your own for everything!!
+    install_requires=["oslo.messaging==5.30.2", "oslo.config==4.11.1",
+                      "oslo.middleware==3.30.1", "oslo.service==1.25.1",
+                      "oslo.log==3.30.2", "oslo.concurrency==3.21.1",
+                      "amqp==2.1.3", "kombu==4.0.1",
+                      "pika==0.10.0", "pika-pool==0.1.3"],
     tests_require=[],
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[
