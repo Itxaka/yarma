@@ -1,15 +1,15 @@
-import eventlet
-eventlet.monkey_patch()
-import warnings
 from time import sleep
+import warnings
+import eventlet
 import uuid
-from oslo_utils import timeutils
 from oslo_log import log as logging
 from os.path import expanduser
 from oslo_context import context
 from oslo_service import service
 from oslo_config import cfg
 import oslo_messaging as messaging
+eventlet.monkey_patch()
+
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -155,4 +155,3 @@ if __name__ == "__main__":
         exit(agent.publisher_start())
     elif cfg.CONF.listener == "consumer":
         exit(agent.consumer_start())
-

@@ -22,6 +22,7 @@ setup(
                       "amqp==2.1.3", "kombu==4.0.1",
                       "pika==0.10.0", "pika-pool==0.1.3"],
     tests_require=[],
+    test_suite="tests",
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[
         "Programming Language :: Python",
