@@ -14,7 +14,7 @@ import oslo_messaging as messaging
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 register_opts = [
-    cfg.StrOpt("transport"),
+    cfg.StrOpt("transport_url"),
     cfg.StrOpt("consumer_queue", default="yarma"),
     cfg.StrOpt("publisher_queue", default="yarma"),
     cfg.IntOpt("heartbeat_timeout", default=60),
@@ -66,7 +66,6 @@ class YarmaConsumerService(service.Service):
         super(YarmaConsumerService, self).__init__()
         self.consumer_target = messaging.Target(
             topic=cfg.CONF.default.consumer_queue,
-            exchange="yarma",
             server="rabbit"
         )
         self.transport = transport
@@ -102,7 +101,6 @@ class YarmaPublisherService(service.Service):
         super(YarmaPublisherService, self).__init__()
         self.publisher_target = messaging.Target(
             topic=cfg.CONF.default.publisher_queue,
-            exchange="yarma"
         )
         self.transport = transport
         self.server = None
@@ -130,7 +128,7 @@ class RabbitMonitoringAgent:
     def __init__(self):
         conf = cfg.CONF.default
 
-        self.transport = messaging.get_transport(cfg.CONF, url=conf.transport)
+        self.transport = messaging.get_transport(cfg.CONF, url=conf.transport_url)
 
         LOG.info("Starting")
         LOG.debug("Using transport {}".format(self.transport))
