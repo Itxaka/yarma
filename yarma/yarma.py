@@ -1,4 +1,3 @@
-from time import sleep
 import warnings
 import eventlet
 import uuid
@@ -24,10 +23,10 @@ register_opts = [
 cfg.CONF.register_opts(register_opts, "default")
 cfg.CONF.register_cli_opt(
     cfg.StrOpt("listener",
-               choices=["publisher", "consumer"],
+               choices=["heartbeat", "consumer"],
                ignore_case=True,
                required=True,
-               help="Either publisher or consumer")
+               help="Either heartbeat or consumer")
 )
 # register default logging options
 logging.register_options(cfg.CONF)
@@ -96,32 +95,23 @@ class YarmaConsumerService(service.Service):
         super(YarmaConsumerService, self).wait()
 
 
-class YarmaPublisherService(service.Service):
+class YarmaHearbeatService(service.Service):
     def __init__(self, transport):
-        super(YarmaPublisherService, self).__init__()
+        super(YarmaHearbeatService, self).__init__()
         self.publisher_target = messaging.Target(
             topic=cfg.CONF.default.publisher_queue,
         )
         self.transport = transport
-        self.server = None
-        self.running = False
-
-    def start(self):
         self.server = messaging.RPCClient(
             self.transport,
             self.publisher_target,
             serializer=messaging.JsonPayloadSerializer()
         )
-        context = YarmaRequestContext()
-        self.running = True
-        while self.running:
-            self.server.cast(context, "test")
-            LOG.info("Message {} sent".format(context.uuid))
-            sleep(10)
 
-    def stop(self, graceful=False):
-        self.running = False
-        super(YarmaPublisherService, self).stop(graceful)
+    def start(self):
+        # send a msg so the connection gets established and hearbeat starts
+        context = YarmaRequestContext()
+        self.server.cast(context, "test")
 
 
 class RabbitMonitoringAgent:
@@ -136,9 +126,9 @@ class RabbitMonitoringAgent:
             cfg.CONF.oslo_messaging_rabbit.rabbit_qos_prefetch_count
         ))
 
-    def publisher_start(self):
+    def heartbeat_start(self):
         launcher = service.ProcessLauncher(cfg.CONF, restart_method="mutate")
-        publisher = YarmaPublisherService(self.transport)
+        publisher = YarmaHearbeatService(self.transport)
         launcher.launch_service(publisher)
         launcher.wait()
 
@@ -151,7 +141,7 @@ class RabbitMonitoringAgent:
 
 if __name__ == "__main__":
     agent = RabbitMonitoringAgent()
-    if cfg.CONF.listener == "publisher":
-        exit(agent.publisher_start())
+    if cfg.CONF.listener == "heartbeat":
+        exit(agent.heartbeat_start())
     elif cfg.CONF.listener == "consumer":
         exit(agent.consumer_start())
