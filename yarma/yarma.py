@@ -17,16 +17,17 @@ register_opts = [
     cfg.StrOpt("consumer_queue", default="yarma"),
     cfg.StrOpt("publisher_queue", default="yarma"),
     cfg.IntOpt("heartbeat_timeout", default=60),
+    cfg.IntOpt("send_msg_every", default=30),
     cfg.BoolOpt("debug", default=False)
 ]
 # register oslo.config options
 cfg.CONF.register_opts(register_opts, "default")
 cfg.CONF.register_cli_opt(
     cfg.StrOpt("listener",
-               choices=["heartbeat", "consumer"],
+               choices=["heartbeat", "consumer", "publisher"],
                ignore_case=True,
                required=True,
-               help="Either heartbeat or consumer")
+               help="Either heartbeat, consumer or publisher")
 )
 # register default logging options
 logging.register_options(cfg.CONF)
@@ -114,6 +115,26 @@ class YarmaHearbeatService(service.Service):
         self.server.cast(context, "test")
 
 
+class YarmaPublisherService(service.Service):
+    def __init__(self, transport):
+        super(YarmaPublisherService, self).__init__()
+        self.publisher_target = messaging.Target(
+            topic=cfg.CONF.default.publisher_queue,
+        )
+        self.transport = transport
+        self.server = messaging.RPCClient(
+            self.transport,
+            self.publisher_target,
+            serializer=messaging.JsonPayloadSerializer()
+        )
+
+    def start(self):
+        context = YarmaRequestContext()
+        while True:
+            self.server.cast(context, "test")
+            eventlet.sleep(cfg.CONF.default.send_msg_every)
+
+
 class RabbitMonitoringAgent:
     def __init__(self):
         conf = cfg.CONF.default
@@ -138,6 +159,12 @@ class RabbitMonitoringAgent:
         launcher.launch_service(consumer)
         launcher.wait()
 
+    def publisher_start(self):
+        launcher = service.ProcessLauncher(cfg.CONF, restart_method="mutate")
+        publisher = YarmaPublisherService(self.transport)
+        launcher.launch_service(publisher)
+        launcher.wait()
+
 
 if __name__ == "__main__":
     agent = RabbitMonitoringAgent()
@@ -145,3 +172,5 @@ if __name__ == "__main__":
         exit(agent.heartbeat_start())
     elif cfg.CONF.listener == "consumer":
         exit(agent.consumer_start())
+    elif cfg.CONF.listener == "publisher":
+        exit(agent.publisher_start())
