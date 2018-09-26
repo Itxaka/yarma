@@ -17,14 +17,12 @@ register_opts = [
     cfg.StrOpt("transport_url"),
     cfg.StrOpt("consumer_queue", default="yarma"),
     cfg.StrOpt("publisher_queue", default="yarma"),
-    cfg.IntOpt("heartbeat_timeout", default=60),
-    cfg.IntOpt("send_msg_every", default=30),
-    cfg.BoolOpt("debug", default=False)
+    cfg.IntOpt("send_msg_every", default=30)
 ]
 # register oslo.config options
 cfg.CONF.register_opts(register_opts, "default")
 cfg.CONF.register_cli_opt(
-    cfg.StrOpt("listener",
+    cfg.StrOpt("launch",
                choices=["heartbeat", "consumer", "publisher", "all"],
                ignore_case=True,
                required=True,
@@ -43,6 +41,7 @@ logging.set_defaults(default_log_levels=logging.get_default_log_levels())
 logging.setup(cfg.CONF, "yarma")
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+
 
 class YarmaEndpoint(object):
     """This will be attached to the consumer and each message received will be checked
@@ -176,13 +175,13 @@ class RabbitMonitoringAgent:
         services.wait()
 
 
-if __name__ == "__main__":
+def main():
     agent = RabbitMonitoringAgent()
-    if cfg.CONF.listener == "heartbeat":
+    if cfg.CONF.launch == "heartbeat":
         exit(agent.heartbeat_start())
-    elif cfg.CONF.listener == "consumer":
+    elif cfg.CONF.launch == "consumer":
         exit(agent.consumer_start())
-    elif cfg.CONF.listener == "publisher":
+    elif cfg.CONF.launch == "publisher":
         exit(agent.publisher_start())
-    elif cfg.CONF.listener == "all":
+    elif cfg.CONF.launch == "all":
         exit(agent.start_all())
