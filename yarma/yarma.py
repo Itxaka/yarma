@@ -1,6 +1,7 @@
 import warnings
 import eventlet
 import uuid
+import datetime
 from oslo_log import log as logging
 from os.path import expanduser
 from oslo_context import context
@@ -41,13 +42,15 @@ LOG = logging.getLogger(__name__)
 logging.set_defaults(default_log_levels=logging.get_default_log_levels())
 logging.setup(cfg.CONF, "yarma")
 
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 class YarmaEndpoint(object):
     """This will be attached to the consumer and each message received will be checked
     against the endpoints to see if they respond to that method. In the case that the endpoint
     has the method being called on the incoming message, it will be triggered"""
     def test(self, context, **kwargs):
-        LOG.info("Got message {}".format(context["uuid"]))
+        timestamp = datetime.datetime.strptime(context["timestamp"], TIME_FORMAT)
+        LOG.info("Got message {} with timestamp {}".format(context["uuid"], timestamp))
         return
 
 
@@ -55,9 +58,10 @@ class YarmaRequestContext(context.RequestContext):
     def __init__(self):
         super(YarmaRequestContext, self).__init__()
         self.uuid = uuid.uuid1()
+        self.timestamp = datetime.datetime.utcnow().strftime(TIME_FORMAT)
 
     def to_dict(self):
-        context = {"uuid": self.uuid}
+        context = {"uuid": self.uuid, "timestamp": self.timestamp}
         return context
 
 
@@ -133,7 +137,7 @@ class YarmaPublisherService(service.Service):
             # recreate context so we get an unique uuid
             context = YarmaRequestContext()
             self.server.cast(context, "test")
-            LOG.info("message {} sent".format(context.uuid))
+            LOG.info("Sent message {} with timestamp {}".format(context.uuid, context.timestamp))
             eventlet.sleep(cfg.CONF.default.send_msg_every)
 
 
@@ -144,10 +148,6 @@ class RabbitMonitoringAgent:
         self.transport = messaging.get_transport(cfg.CONF, url=conf.transport_url)
 
         LOG.info("Starting")
-        LOG.debug("Using transport {}".format(self.transport))
-        LOG.debug("Using prefetch: {}".format(
-            cfg.CONF.oslo_messaging_rabbit.rabbit_qos_prefetch_count
-        ))
 
     def heartbeat_start(self):
         launcher = service.ProcessLauncher(cfg.CONF, restart_method="mutate")
