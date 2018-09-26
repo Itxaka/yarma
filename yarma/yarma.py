@@ -24,10 +24,10 @@ register_opts = [
 cfg.CONF.register_opts(register_opts, "default")
 cfg.CONF.register_cli_opt(
     cfg.StrOpt("listener",
-               choices=["heartbeat", "consumer", "publisher"],
+               choices=["heartbeat", "consumer", "publisher", "all"],
                ignore_case=True,
                required=True,
-               help="Either heartbeat, consumer or publisher")
+               help="Either heartbeat, consumer, publisher or all")
 )
 # register default logging options
 logging.register_options(cfg.CONF)
@@ -129,9 +129,11 @@ class YarmaPublisherService(service.Service):
         )
 
     def start(self):
-        context = YarmaRequestContext()
         while True:
+            # recreate context so we get an unique uuid
+            context = YarmaRequestContext()
             self.server.cast(context, "test")
+            LOG.info("message {} sent".format(context.uuid))
             eventlet.sleep(cfg.CONF.default.send_msg_every)
 
 
@@ -149,8 +151,8 @@ class RabbitMonitoringAgent:
 
     def heartbeat_start(self):
         launcher = service.ProcessLauncher(cfg.CONF, restart_method="mutate")
-        publisher = YarmaHearbeatService(self.transport)
-        launcher.launch_service(publisher)
+        heartbeat = YarmaHearbeatService(self.transport)
+        launcher.launch_service(heartbeat)
         launcher.wait()
 
     def consumer_start(self):
@@ -165,6 +167,14 @@ class RabbitMonitoringAgent:
         launcher.launch_service(publisher)
         launcher.wait()
 
+    def start_all(self):
+        services = service.Services()
+        consumer = YarmaConsumerService(self.transport)
+        publisher = YarmaPublisherService(self.transport)
+        services.add(consumer)
+        services.add(publisher)
+        services.wait()
+
 
 if __name__ == "__main__":
     agent = RabbitMonitoringAgent()
@@ -174,3 +184,5 @@ if __name__ == "__main__":
         exit(agent.consumer_start())
     elif cfg.CONF.listener == "publisher":
         exit(agent.publisher_start())
+    elif cfg.CONF.listener == "all":
+        exit(agent.start_all())
