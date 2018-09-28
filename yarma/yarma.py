@@ -60,8 +60,7 @@ class YarmaRequestContext(context.RequestContext):
         self.timestamp = datetime.datetime.utcnow().strftime(TIME_FORMAT)
 
     def to_dict(self):
-        context = {"uuid": self.uuid, "timestamp": self.timestamp}
-        return context
+        return {"uuid": self.uuid, "timestamp": self.timestamp}
 
 
 class YarmaConsumerService(service.Service):
@@ -114,8 +113,8 @@ class YarmaHearbeatService(service.Service):
 
     def start(self):
         # send a msg so the connection gets established and hearbeat starts
-        context = YarmaRequestContext()
-        self.server.cast(context, "test")
+        ctx = YarmaRequestContext()
+        self.server.cast(ctx.to_dict(), "test")
 
 
 class YarmaPublisherService(service.Service):
@@ -134,9 +133,9 @@ class YarmaPublisherService(service.Service):
     def start(self):
         while True:
             # recreate context so we get an unique uuid
-            context = YarmaRequestContext()
-            self.server.cast(context, "test")
-            LOG.info("Sent message {} with timestamp {}".format(context.uuid, context.timestamp))
+            ctx = YarmaRequestContext()
+            self.server.cast(ctx.to_dict(), "test")
+            LOG.info("Sent message {} with timestamp {}".format(ctx.uuid, ctx.timestamp))
             eventlet.sleep(cfg.CONF.default.send_msg_every)
 
 
