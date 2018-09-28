@@ -21,8 +21,6 @@ setup(
                       "oslo.log==3.16.1", "oslo.concurrency==3.14.1",
                       "amqp==1.4.9", "kombu==3.0.35",
                       "pika==0.10.0", "pika-pool==0.1.3"],
-    tests_require=[],
-    test_suite="tests",
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[
         "Programming Language :: Python",
