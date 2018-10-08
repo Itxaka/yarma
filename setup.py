@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="yarma",
-    version="0.1.0",
+    version="1.0.0",
     description="Yet Another Rabbit Monitoring Agent",
     author="Itxaka Serrano Garcia",
     author_email="igarcia@suse.com",
