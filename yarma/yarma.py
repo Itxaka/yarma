@@ -33,7 +33,7 @@ logging.register_options(cfg.CONF)
 
 # load config from file
 config_file = expanduser("~/.yarma.conf")
-cfg.CONF(project="yarma", version="1.1.1", default_config_files=[config_file])
+cfg.CONF(project="yarma", version="1.0.0", default_config_files=[config_file])
 
 # setup the logger
 LOG = logging.getLogger(__name__)
